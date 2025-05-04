@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Детектор дефектов дороги</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
+</head>
+<body>
+
+  <header>
+    <div class="header-content">
+      <h1>Детектор дефектов дороги</h1>
+    </div>
+  </header>
+
+  <main>
+    <div class="content">
+      <label for="file-upload" class="upload-btn">📷 Загрузить фото</label>
+      <input type="file" id="file-upload" accept="image/*" onchange="handleFile(event)" />
+      
+      <div id="file-name-container" class="file-name-container" style="display:none;">
+        <p id="file-name"></p>
+      </div>
+
+      <img id="preview" class="preview-image" src="" alt="Предпросмотр" style="display:none; max-width: 100%;"/>
+
+      <div class="action-buttons">
+        <button id="process-btn" disabled>Обработать</button>
+        <button id="reset-btn" disabled>Сбросить фото</button>
+      </div>
+
+      <div id="result-container" style="margin-top: 20px;">
+        <h3 style="display:none;" id="result-title">Результат обработки:</h3>
+        <img id="result-image" class="preview-image" src="" alt="Результат" style="display:none; max-width: 100%;"/>
+        <button id="fullscreen-btn" class="fullscreen-btn" style="display:none;">Просмотр на весь экран</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Дорожная Инспекция | Все права защищены</p>
+  </footer>
+
+  <script>
+    function handleFile(event) {
+      const file = event.target.files[0];
+      const fileNameElem = document.getElementById('file-name');
+      const fileNameContainer = document.getElementById('file-name-container');
+      const processBtn = document.getElementById('process-btn');
+      const resetBtn = document.getElementById('reset-btn');
+      const preview = document.getElementById('preview');
+
+      if (file) {
+        fileNameElem.textContent = `Файл выбран: ${file.name}`;
+        fileNameContainer.style.display = 'block';
+        processBtn.disabled = false;
+        resetBtn.disabled = false;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      document.getElementById('file-upload').value = '';
+      document.getElementById('file-name').textContent = '';
+      document.getElementById('file-name-container').style.display = 'none';
+      document.getElementById('process-btn').disabled = true;
+      document.getElementById('reset-btn').disabled = true;
+      document.getElementById('preview').style.display = 'none';
+      document.getElementById('result-image').style.display = 'none';
+      document.getElementById('result-title').style.display = 'none';
+      document.getElementById('fullscreen-btn').style.display = 'none';
+    });
+
+    document.getElementById('process-btn').addEventListener('click', async () => {
+      const fileInput = document.getElementById('file-upload');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const response = await fetch('/process', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (data.result) {
+          const resultImage = document.getElementById('result-image');
+          const resultTitle = document.getElementById('result-title');
+          resultImage.src = data.result + '?t=' + new Date().getTime(); // Обновление кеша
+          resultImage.style.display = 'block';
+          resultTitle.style.display = 'block';
+          document.getElementById('fullscreen-btn').style.display = 'inline-block';
+        } else {
+          alert('Ошибка при обработке изображения');
+        }
+      } catch (error) {
+        console.error('Ошибка запроса:', error);
+        alert('Не удалось обработать изображение');
+      }
+    });
+
+    // Полноэкранный режим
+    document.getElementById('fullscreen-btn').addEventListener('click', function() {
+      const image = document.getElementById('result-image');
+      if (image.requestFullscreen) {
+        image.requestFullscreen();
+      } else if (image.msRequestFullscreen) { /* для старых версий IE */
+        image.msRequestFullscreen();
+      } else if (image.mozRequestFullScreen) { /* Firefox */
+        image.mozRequestFullScreen();
+      } else if (image.webkitRequestFullscreen) { /* Chrome, Safari и Opera */
+        image.webkitRequestFullscreen();
+      }
+    });
+  </script>
+
+</body>
+</html>
