@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: road-defect-detector
-    env: python
-    buildCommand: ""
-    startCommand: "python app.py"
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.10
